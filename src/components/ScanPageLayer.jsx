@@ -8,10 +8,23 @@ import {
   DialogTitle,
   IconButton,
   Button,
+  Box,
+  Typography,
 } from "@mui/material";
 import { ModalBody, Modal } from "reactstrap";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
+
+const style = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  boxShadow: 24,
+  p: 4,
+};
 
 const cardData = [
   {
@@ -45,6 +58,8 @@ const ScanPageLayer = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [userDetails, setUserDetails] = useState({});
+    const [alertMessage, setAlertMessage] = useState("");
+    const [open, setOpen] = useState(false);
   const companyId=localStorage.getItem("companyId");
 
   const navigate = useNavigate();
@@ -68,6 +83,37 @@ const ScanPageLayer = () => {
       hour12: true,
     });
   };
+
+  useEffect(() => {
+      const checkLicenseStatus = async () => {
+        try {
+          const response = await fetch(
+            `${process.env.REACT_APP_BACKEND_URL}/admin/license-status`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("userToken")}`,
+              },
+            }
+          );
+  
+          const data = await response.json();
+          if (
+            data.isTrial === false &&
+            data.isExpired === true &&
+            data.alertMessage != null
+          ) {
+            setOpen(true);
+            setAlertMessage(data.alertMessage);
+          }
+        } catch (error) {
+          console.error("Error checking license status:", error);
+        }
+      };
+  
+      checkLicenseStatus();
+    }, []);
+  
 
   const handleScanBarcode = async (scannedBarcode) => {
     if (!scannedBarcode) return;
@@ -173,6 +219,32 @@ const ScanPageLayer = () => {
 
   return (
     <>
+
+<div>
+        <Modal
+          open={open}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box sx={style}>
+            <Typography id="modal-modal-title" variant="h6" component="h5">
+              🔒 Access Blocked
+            </Typography>
+            <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+              {alertMessage}
+            </Typography>
+
+            <Button
+              variant="contained"
+              color="primary"
+              // onClick={handleActivate}
+              sx={{ mt: 2, width: "100%" }}
+            >
+              Activate License
+            </Button>
+          </Box>
+        </Modal>
+      </div>
       {/* Cards Displaying Employee & Security Count */}
 
       <div className="row row-cols-xxxl-5 row-cols-lg-3 row-cols-sm-2 row-cols-1 gy-4 flex justify-content-center">

@@ -142,12 +142,18 @@ function App() {
 
   const checkLicenseStatus = async () => {
     try {
+      const token =
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("userToken") ||
+        localStorage.getItem("deptUserToken");
+
+      if (!token) return;
       const response = await fetch(
         `${process.env.REACT_APP_BACKEND_URL}/admin/license-status`,
         {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );

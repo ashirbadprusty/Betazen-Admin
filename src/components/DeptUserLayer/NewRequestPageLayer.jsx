@@ -1,9 +1,19 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
 import React, { useEffect, useState } from "react";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { IconButton } from "@mui/material";
+import { Box, Button, IconButton, Typography } from "@mui/material";
 import { ModalBody, Modal } from "reactstrap";
 import moment from "moment";
+const style = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  boxShadow: 24,
+  p: 4,
+};
 
 const NewRequestPageLayer = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -14,7 +24,8 @@ const NewRequestPageLayer = () => {
   const [selectedFormId, setSelectedFormId] = useState(null);
   const [photoModalShow, setPhotoModalShow] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
-
+    const [alertMessage, setAlertMessage] = useState("");
+    const [open, setOpen] = useState(false);
   const deptUserEmail = localStorage.getItem("DeptUserEmail");
 
   useEffect(() => {
@@ -50,6 +61,36 @@ const NewRequestPageLayer = () => {
       console.error("Error fetching forms:", error);
     }
   };
+
+  useEffect(() => {
+        const checkLicenseStatus = async () => {
+          try {
+            const response = await fetch(
+              `${process.env.REACT_APP_BACKEND_URL}/admin/license-status`,
+              {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("deptUserToken")}`,
+                },
+              }
+            );
+    
+            const data = await response.json();
+            if (
+              data.isTrial === false &&
+              data.isExpired === true &&
+              data.alertMessage != null
+            ) {
+              setOpen(true);
+              setAlertMessage(data.alertMessage);
+            }
+          } catch (error) {
+            console.error("Error checking license status:", error);
+          }
+        };
+    
+        checkLicenseStatus();
+      }, []);
 
   const totalPages = Math.ceil(forms.length / recordsPerPage);
   const indexOfLastRecord = currentPage * recordsPerPage;
@@ -108,6 +149,32 @@ const NewRequestPageLayer = () => {
   };
 
   return (
+<>
+    <div>
+            <Modal
+              open={open}
+              aria-labelledby="modal-modal-title"
+              aria-describedby="modal-modal-description"
+            >
+              <Box sx={style}>
+                <Typography id="modal-modal-title" variant="h6" component="h5">
+                  🔒 Access Blocked
+                </Typography>
+                <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                  {alertMessage}
+                </Typography>
+    
+                <Button
+                  variant="contained"
+                  color="primary"
+                  // onClick={handleActivate}
+                  sx={{ mt: 2, width: "100%" }}
+                >
+                  Activate License
+                </Button>
+              </Box>
+            </Modal>
+          </div>
     <div className="card radius-16 mt-24">
       <div className="card-body">
         {forms.length === 0 ? (
@@ -370,6 +437,7 @@ const NewRequestPageLayer = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
